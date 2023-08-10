@@ -1,0 +1,8 @@
+{
+  "name": "Roulette",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular",
+  "id": "f64181ea"
+}
