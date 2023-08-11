@@ -9,11 +9,9 @@
   <ion-grid>
     <ion-row *ngFor="let rowIndex of [0, 1, 2, 3, 4, 5]">
       <ion-col *ngFor="let colIndex of [0, 1, 2, 3]">
-        <ion-input
-    type="text"
-    [value]="values[rowIndex * 4 + colIndex]"
-    (ionBlur)="validateValue(rowIndex * 4 + colIndex)"
-  ></ion-input>
+        <ion-input type="text" [value]="values[rowIndex * 4 + colIndex]"
+          (ionInput)="onInputChange($event, rowIndex * 4 + colIndex)" (ionBlur)="validateValue(rowIndex * 4 + colIndex)"
+        ></ion-input>
       </ion-col>
     </ion-row>
     <ion-row>
