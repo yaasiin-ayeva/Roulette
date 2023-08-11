@@ -132,6 +132,8 @@ captures/
 # Google Services (e.g. APIs or Firebase)
 # google-services.json
 
+android/*
+
 # Freeline
 freeline.py
 freeline/
