@@ -7,10 +7,13 @@
 </ion-header>
 <ion-content class="ion-padding" [fullscreen]="true">
   <ion-grid>
-    <ion-row *ngFor="let row of grid; let rowIndex = index">
-      <ion-col *ngFor="let value of row; let colIndex = index">
-        <ion-input [(ngModel)]="grid[rowIndex][colIndex]" [placeholder]="'Value ' + (rowIndex * 4 + colIndex + 1)"
-          (ionChange)="validateValue(rowIndex, colIndex)"></ion-input>
+    <ion-row *ngFor="let rowIndex of [0, 1, 2, 3, 4, 5]">
+      <ion-col *ngFor="let colIndex of [0, 1, 2, 3]">
+        <ion-input
+    type="text"
+    [value]="values[rowIndex * 4 + colIndex]"
+    (ionBlur)="validateValue(rowIndex * 4 + colIndex)"
+  ></ion-input>
       </ion-col>
     </ion-row>
     <ion-row>
