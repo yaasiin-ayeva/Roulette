@@ -1,17 +1,25 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="ion-no-border">
   <ion-toolbar>
     <ion-title>
-      Home 
+      Roulette
     </ion-title>
   </ion-toolbar>
 </ion-header>
-
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Home</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <!-- <app-explore-container name="Home"></app-explore-container> -->
+<ion-content class="ion-padding" [fullscreen]="true">
+  <ion-grid>
+    <ion-row *ngFor="let rowIndex of [0, 1, 2, 3, 4, 5]">
+      <ion-col *ngFor="let colIndex of [0, 1, 2, 3]">
+        <ion-input
+    type="text"
+    [value]="values[rowIndex * 4 + colIndex]"
+    (ionBlur)="validateValue(rowIndex * 4 + colIndex)"
+  ></ion-input>
+      </ion-col>
+    </ion-row>
+    <ion-row>
+      <ion-col *ngFor="let button of buttons">
+        <ion-button expand="full" (click)="handleButtonClick(button)">{{ button }}</ion-button>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>
