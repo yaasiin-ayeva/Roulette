@@ -1,18 +1,18 @@
 ion-grid {
-    max-width: 900px; // ajuste la largeur de la grille
+    max-width: 900px;
     margin: 0 auto;
-  }
-  
-  ion-input {
+}
+
+ion-input {
     text-align: center;
     font-size: 18px;
     border: 1px solid #ccc;
     border-radius: 8px;
     padding: 8px;
     margin: 4px;
-  }
-  
-  ion-button {
+}
+
+ion-button {
     --background: #3498db;
     --color: white;
     margin: 4px;
@@ -20,9 +20,8 @@ ion-grid {
     border-radius: 8px;
     text-transform: uppercase;
     font-weight: bold;
-  }
-  
-  ion-content {
-    --ion-background-color: #f5f5f5; // couleur de fond de la page
-  }
-  
+}
+
+ion-content {
+    --ion-background-color: #f5f5f5;
+}
