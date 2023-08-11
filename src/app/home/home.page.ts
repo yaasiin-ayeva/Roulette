@@ -9,6 +9,8 @@ import { AlertController, ToastController } from '@ionic/angular';
 export class HomePage implements OnInit {
 
   values: string[];
+  start: number = 0;
+  end: number = 23;
 
   constructor(
     private toastController: ToastController,
@@ -24,11 +26,23 @@ export class HomePage implements OnInit {
   buttons: string[] = ['+', '-', 'Statistics', 'Wipe'];
 
   validateValue(colIndex: number) {
-
     const inputValue = Number(this.values[colIndex]);
-
     if (!isNaN(inputValue) && inputValue >= 0 && inputValue <= 36) {
       this.values[colIndex] = inputValue.toString();
+    }
+  }
+
+  private moveValuesBackward() {
+    if (this.start > 0) {
+      this.start--;
+      this.end--;
+
+      for (let i = 0; i < this.values.length; i++) {
+        if (i >= this.start && i <= this.end) {
+          this.values[i] = this.values[i + 1];
+        }
+      }
+      this.values[this.end + 1] = '';
     }
   }
 
@@ -36,6 +50,14 @@ export class HomePage implements OnInit {
     if (button === 'Wipe') {
       console.log('Wipe');
       this.wipeGrid();
+    } else if (button === '+') {
+      console.log('+');
+      console.log('values', this.values);
+      
+      this.addValue();
+      this.moveValuesBackward(); // Ajoutez cette ligne pour déplacer les valeurs
+      console.log('values', this.values);
+      
     }
   }
 
@@ -60,6 +82,37 @@ export class HomePage implements OnInit {
     console.log('inputValue', value);
   }
 
+  // private addValue() {
+  //   console.log('values', this.values);
+
+  //   if (this.values[this.values.length - 1] === '') {
+  //     return;
+  //   }
+
+  //   let newArray = new Array(this.values.length).fill('');
+
+  //   this.values.forEach((value, index) => {
+  //     newArray[index] = value;
+  //   });
+
+  //   this.values = newArray;
+  //   this.values.push('');
+
+  //   this.start = this.start + 1;
+  //   this.end = this.end + 1;
+
+  //   console.log('values', this.values);
+
+  // }
+
+  private addValue() {
+    if (this.values[this.values.length - 1] === '') {
+      return;
+    } 
+  
+    this.values.push('');
+  }
+  
 
   private wipeGrid() {
     this.alertController.create({

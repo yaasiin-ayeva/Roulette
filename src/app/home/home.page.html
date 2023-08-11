@@ -11,7 +11,7 @@
       <ion-col *ngFor="let colIndex of [0, 1, 2, 3]">
         <ion-input type="text" [value]="values[rowIndex * 4 + colIndex]"
           (ionInput)="onInputChange($event, rowIndex * 4 + colIndex)" (ionBlur)="validateValue(rowIndex * 4 + colIndex)"
-          #ionInputEl></ion-input>
+        ></ion-input>
       </ion-col>
     </ion-row>
     <ion-row>
