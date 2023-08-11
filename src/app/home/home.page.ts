@@ -39,21 +39,27 @@ export class HomePage implements OnInit {
     }
   }
 
-  getRegexPattern(): string {
-    return '^(?:[0-9]|[1-2][0-9]|3[0-6])$';
-  }
+  onInputChange(event: any, index: number) {
+    let value = event.target!.value;
 
-  onChange(event: any, index: number) {
-    const input = event.target as HTMLInputElement;
-    const newValue = input.value;
-    const pattern = /^(?:[0-9]|[1-2][0-9]|3[0-6])$/;
+    const lastLetter = value[value.length - 1];
 
-    if (!pattern.test(newValue)) {
-      input.value = this.values[index];
+    if (isNaN(lastLetter)) {
+      value = value.slice(0, -1);
     } else {
-      this.values[index] = newValue;
+      let inputValue = Number(value);
+
+      while (inputValue > 36) {
+        value = value.slice(0, -1);
+        inputValue = Number(value);
+      }
     }
+    event.target.value = value;
+    this.values[index] = value;
+
+    console.log('inputValue', value);
   }
+
 
   private wipeGrid() {
     this.alertController.create({
