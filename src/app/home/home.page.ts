@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { AlertController, ToastController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { ComputationService } from 'src/services/computation.service';
 import { DatabaseService, TableName } from 'src/services/database.service';
 
@@ -17,6 +17,7 @@ export class HomePage implements OnInit {
   constructor(
     private toastController: ToastController,
     private alertController: AlertController,
+    private loadingController: LoadingController,
     private databaseService: DatabaseService,
     private computationService: ComputationService
   ) {
@@ -24,31 +25,38 @@ export class HomePage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-
     console.log('onInit');
-    
+
+    const loadingController = await this.loadingController.create({
+      message: 'Seeding database, wait a moment...',
+      mode: 'ios',
+      spinner: 'crescent',
+      translucent: true,
+      showBackdrop: false
+    });
+
+    await loadingController.present();
 
     try {
-      this.presentSuccessToast('bottom', 'Home Page');
-      const tab = Object.keys(TableName);
 
-      console.log('tab', tab);
+      const tab = Object.keys(TableName);
+      let dataSeedingCount = 0;
 
       tab.forEach(async (group) => {
-
-        console.log('reading file', group);
-
         await this.databaseService.seedFromFile(
           `assets/json/${group}.json`,
           group
-        );
+        ).then(() => {
+          dataSeedingCount++;
+          if (dataSeedingCount === tab.length) {
+            loadingController.dismiss();
+          }
+        })
+      });
 
-        console.log('file', group, 'imported');
-      })
-
-      console.log('done');
     } catch (error) {
       console.log(error);
+      await loadingController.dismiss();
     }
   }
 
@@ -105,7 +113,7 @@ export class HomePage implements OnInit {
       console.log('result', JSON.stringify(result));
 
       this.databaseService.searchThroughGroup(Number(result.group_a.one_24), Number(result.group_a.two_24), Number(result.group_a.curr_3), 'group_a').then((data) => {
-        console.log('data', data);
+        console.log('data', JSON.stringify(data));
       })
     }
   }

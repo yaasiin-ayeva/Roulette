@@ -84,6 +84,7 @@ export class DatabaseService {
     curr3Value: number,
     group: 'group_a' | 'group_b'
   ): Promise<any[]> {
+    
     const query = `SELECT * FROM ${group} WHERE one_24 = ? AND two_24 = ? AND Curr_3 = ?;`;
     
     try {
