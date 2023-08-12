@@ -3,6 +3,13 @@ import { AlertController, LoadingController, ToastController } from '@ionic/angu
 import { ComputationService } from 'src/services/computation.service';
 import { DatabaseService, TableName } from 'src/services/database.service';
 
+enum Buttons {
+  Add = '+',
+  Subtract = '-',
+  Statistics = 'Statistics',
+  Wipe = 'Wipe',
+}
+
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -11,8 +18,9 @@ import { DatabaseService, TableName } from 'src/services/database.service';
 export class HomePage implements OnInit {
 
   values: string[];
-  start: number = 0;
-  end: number = 23;
+  start = 0;
+  end = 23;
+  buttons = Object.values(Buttons);
 
   constructor(
     private toastController: ToastController,
@@ -25,42 +33,31 @@ export class HomePage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    console.log('onInit');
+    await this.seedDatabase();
+  }
 
+  async seedDatabase() {
     const loadingController = await this.loadingController.create({
       message: 'Seeding database, wait a moment...',
       mode: 'ios',
       spinner: 'crescent',
       translucent: true,
-      showBackdrop: false
+      showBackdrop: false,
     });
 
-    await loadingController.present();
-
     try {
-
       const tab = Object.keys(TableName);
-      let dataSeedingCount = 0;
-
-      tab.forEach(async (group) => {
-        await this.databaseService.seedFromFile(
-          `assets/json/${group}.json`,
-          group
-        ).then(() => {
-          dataSeedingCount++;
-          if (dataSeedingCount === tab.length) {
-            loadingController.dismiss();
-          }
-        })
+      const promises = tab.map(async (group) => {
+        await this.databaseService.seedFromFile(`assets/json/${group}.json`, group);
       });
 
+      await Promise.all(promises);
     } catch (error) {
       console.log(error);
+    } finally {
       await loadingController.dismiss();
     }
   }
-
-  buttons: string[] = ['+', '-', 'Statistics', 'Wipe'];
 
   validateValue(colIndex: number) {
     const inputValue = Number(this.values[colIndex]);
@@ -74,53 +71,26 @@ export class HomePage implements OnInit {
       this.start--;
       this.end--;
 
-      for (let i = 0; i < this.values.length; i++) {
-        if (i >= this.start && i <= this.end) {
-          this.values[i] = this.values[i + 1];
-        }
+      for (let i = this.start; i <= this.end; i++) {
+        this.values[i] = this.values[i + 1];
       }
       this.values[this.end + 1] = '';
     }
   }
 
   handleButtonClick(button: string) {
-    if (button === 'Wipe') {
-      console.log('Wipe');
+    if (button === Buttons.Wipe) {
       this.wipeGrid();
-    } else if (button === '+') {
-      console.log('+');
-      console.log('values', this.values);
-
+    } else if (button === Buttons.Add) {
       this.addValue();
       this.moveValuesBackward();
-      console.log('values', this.values);
-
-    } else if (button === 'Statistics') {
-
-      const inputArray: number[] = [
-        35, 25, 19, 22,
-        9, 1, 12, 35,
-        7, 3,
-        36, 33, 35, 11,
-        20, 34, 22, 29,
-        22, 13,
-        25, 9, 2, 21
-      ];
-
-      // const result = this.computationService.computeValues(this.values);
-      const result = this.computationService.computeValues(inputArray);
-
-      console.log('result', JSON.stringify(result));
-
-      this.databaseService.searchThroughGroup(Number(result.group_a.one_24), Number(result.group_a.two_24), Number(result.group_a.curr_3), 'group_a').then((data) => {
-        console.log('data', JSON.stringify(data));
-      })
+    } else if (button === Buttons.Statistics) {
+      this.computeStatistics();
     }
   }
 
   onInputChange(event: any, index: number) {
-    let inputValue = event.target!.value;
-
+    let inputValue = event.target.value;
     const lastCharacter = inputValue[inputValue.length - 1];
 
     if (isNaN(lastCharacter)) {
@@ -138,29 +108,6 @@ export class HomePage implements OnInit {
     this.values[index] = inputValue;
   }
 
-  // private addValue() {
-  //   console.log('values', this.values);
-
-  //   if (this.values[this.values.length - 1] === '') {
-  //     return;
-  //   }
-
-  //   let newArray = new Array(this.values.length).fill('');
-
-  //   this.values.forEach((value, index) => {
-  //     newArray[index] = value;
-  //   });
-
-  //   this.values = newArray;
-  //   this.values.push('');
-
-  //   this.start = this.start + 1;
-  //   this.end = this.end + 1;
-
-  //   console.log('values', this.values);
-
-  // }
-
   private addValue() {
     if (this.values[this.values.length - 1] === '') {
       return;
@@ -169,26 +116,31 @@ export class HomePage implements OnInit {
     this.values.push('');
   }
 
-
   private wipeGrid() {
-    this.alertController.create({
-      header: 'Wipe Grid',
-      message: 'Are you sure you want to wipe the grid?',
-      mode: 'ios',
-      buttons: [
-        {
-          text: 'No',
-          role: 'cancel'
-        },
-        {
-          text: 'Yes',
-          handler: () => {
-            this.values = new Array(24).fill('');
-            this.presentSuccessToast('bottom', 'Grid Cleared');
-          }
-        }
-      ]
-    }).then(alert => alert.present());
+    this.alertController
+      .create({
+        header: 'Wipe Grid',
+        message: 'Are you sure you want to wipe the grid?',
+        mode: 'ios',
+        buttons: [
+          {
+            text: 'No',
+            role: 'cancel',
+          },
+          {
+            text: 'Yes',
+            handler: () => {
+              this.clearGrid();
+            },
+          },
+        ],
+      })
+      .then((alert) => alert.present());
+  }
+
+  private async clearGrid() {
+    this.values = new Array(24).fill('');
+    await this.presentSuccessToast('bottom', 'Grid Cleared');
   }
 
   async presentSuccessToast(position: 'top' | 'middle' | 'bottom', message: string) {
@@ -202,5 +154,29 @@ export class HomePage implements OnInit {
     });
 
     await toast.present();
+  }
+
+  async computeStatistics() {
+    const inputArray: number[] = [
+      35, 25, 19, 22,
+      9, 1, 12, 35,
+      7, 3,
+      36, 33, 35, 11,
+      20, 34, 22, 29,
+      22, 13,
+      25, 9, 2, 21,
+    ];
+
+    const result = this.computationService.computeValues(inputArray);
+
+    const data = await this.databaseService.fetchFromDb(
+      Number(result.group_a.one_24),
+      Number(result.group_a.two_24),
+      Number(result.group_a.curr_3),
+      'group_a'
+    );
+
+    console.log('result', JSON.stringify(result));
+    console.log('data', JSON.stringify(data));
   }
 }
