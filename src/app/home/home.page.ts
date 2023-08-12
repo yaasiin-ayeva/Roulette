@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AlertController, ToastController } from '@ionic/angular';
+import { ComputationService } from 'src/services/computation.service';
+import { DatabaseService, TableName } from 'src/services/database.service';
 
 @Component({
   selector: 'app-home',
@@ -14,13 +16,37 @@ export class HomePage implements OnInit {
 
   constructor(
     private toastController: ToastController,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private databaseService: DatabaseService,
+    private computationService: ComputationService
   ) {
     this.values = new Array(24).fill('');
   }
 
-  ngOnInit(): void {
-    this.presentSuccessToast('bottom', 'Home Page');
+  async ngOnInit(): Promise<void> {
+
+    try {
+      this.presentSuccessToast('bottom', 'Home Page');
+
+      await this.databaseService.initDatabase();
+
+      const tab = Object.keys(TableName);
+      tab.forEach(async (group) => {
+
+        console.log('reading file', group);
+
+        await this.databaseService.seedFromCsv(
+          `assets/docs/${group}.csv`,
+          group
+        );
+
+        console.log('file', group, 'imported');
+      })
+
+      console.log('done');
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   buttons: string[] = ['+', '-', 'Statistics', 'Wipe'];
@@ -53,33 +79,45 @@ export class HomePage implements OnInit {
     } else if (button === '+') {
       console.log('+');
       console.log('values', this.values);
-      
+
       this.addValue();
-      this.moveValuesBackward(); // Ajoutez cette ligne pour déplacer les valeurs
+      this.moveValuesBackward();
       console.log('values', this.values);
-      
+
+    } else if (button === 'Statistics') {
+
+      const inputArray: number[] = [
+        35, 25, 19, 22,
+        9, 1, 12, 35,
+        7, 3,
+        36, 33, 35, 11,
+        20, 34, 22, 29,
+        22, 13,
+        25, 9, 2, 21
+      ];
+
+      const result = this.computationService.computeValues(this.values);
     }
   }
 
   onInputChange(event: any, index: number) {
-    let value = event.target!.value;
+    let inputValue = event.target!.value;
 
-    const lastLetter = value[value.length - 1];
+    const lastCharacter = inputValue[inputValue.length - 1];
 
-    if (isNaN(lastLetter)) {
-      value = value.slice(0, -1);
+    if (isNaN(lastCharacter)) {
+      inputValue = inputValue.slice(0, -1);
     } else {
-      let inputValue = Number(value);
+      let numericValue = Number(inputValue);
 
-      while (inputValue > 36) {
-        value = value.slice(0, -1);
-        inputValue = Number(value);
+      while (numericValue > 36) {
+        inputValue = inputValue.slice(0, -1);
+        numericValue = Number(inputValue);
       }
     }
-    event.target.value = value;
-    this.values[index] = value;
 
-    console.log('inputValue', value);
+    event.target.value = inputValue;
+    this.values[index] = inputValue;
   }
 
   // private addValue() {
@@ -108,11 +146,11 @@ export class HomePage implements OnInit {
   private addValue() {
     if (this.values[this.values.length - 1] === '') {
       return;
-    } 
-  
+    }
+
     this.values.push('');
   }
-  
+
 
   private wipeGrid() {
     this.alertController.create({
