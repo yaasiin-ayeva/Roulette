@@ -25,18 +25,21 @@ export class HomePage implements OnInit {
 
   async ngOnInit(): Promise<void> {
 
+    console.log('onInit');
+    
+
     try {
       this.presentSuccessToast('bottom', 'Home Page');
-
-      await this.databaseService.initDatabase();
-
       const tab = Object.keys(TableName);
+
+      console.log('tab', tab);
+
       tab.forEach(async (group) => {
 
         console.log('reading file', group);
 
-        await this.databaseService.seedFromCsv(
-          `assets/docs/${group}.csv`,
+        await this.databaseService.seedFromFile(
+          `assets/json/${group}.json`,
           group
         );
 
@@ -96,7 +99,14 @@ export class HomePage implements OnInit {
         25, 9, 2, 21
       ];
 
-      const result = this.computationService.computeValues(this.values);
+      // const result = this.computationService.computeValues(this.values);
+      const result = this.computationService.computeValues(inputArray);
+
+      console.log('result', JSON.stringify(result));
+
+      this.databaseService.searchThroughGroup(Number(result.group_a.one_24), Number(result.group_a.two_24), Number(result.group_a.curr_3), 'group_a').then((data) => {
+        console.log('data', data);
+      })
     }
   }
 

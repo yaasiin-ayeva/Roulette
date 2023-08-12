@@ -1,12 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
-import * as papa from 'papaparse';
 import { HttpClient } from '@angular/common/http';
-
-interface CsvDataRow {
-  name: string;
-  value: number;
-}
 
 export const TableName = {
   group_a: 'group_a',
@@ -19,87 +13,69 @@ export const TableName = {
 export class DatabaseService {
 
   private database: SQLiteObject = new SQLiteObject('roulette.db');
-  private csvData: any[] = [];
 
   constructor(private sqlite: SQLite, private http: HttpClient) {
+    this.initDatabase();
   }
 
-  public async initDatabase() {
+  private async initDatabase() {
     this.database = await this.sqlite.create({
       name: 'roulette.db',
       location: 'default'
     });
   }
 
-  async seedFromCsv(csvFilePath: string, tableName: string): Promise<boolean> {
+  async seedFromFile(filePath: string, tableName: string): Promise<boolean> {
+    const data = await this.readCsvData(filePath);
 
-    this.readCsvData(csvFilePath);
-    const data = this.csvData as CsvDataRow[];
+    if (!data || data.length === 0) {
+      console.log('No data found in the CSV file.');
+      return false;
+    }
+
+    const ddlQuery = `
+      CREATE TABLE IF NOT EXISTS ${tableName} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        one_24 varchar(4),
+        two_24 varchar(4),
+        Curr_3 varchar(4),
+        Target varchar(4)
+      );
+      
+      CREATE INDEX idx_one_24 ON ${tableName} (one_24);
+      CREATE INDEX idx_two_24 ON ${tableName} (two_24);
+      CREATE INDEX idx_Curr_3 ON ${tableName} (Curr_3);
+      CREATE INDEX idx_Target ON ${tableName} (Target);
+    `;
+
+    const dmlQuery = `INSERT INTO ${tableName} (one_24, two_24, Curr_3, Target) VALUES (?, ?, ?, ?);`;
 
     try {
+      await this.database.transaction(async tx => {
+        await tx.executeSql(`DROP TABLE IF EXISTS ${tableName}`);
+        await tx.executeSql(ddlQuery);
 
-      const ddlQuery = `
-        CREATE TABLE IF NOT EXISTS ${tableName} (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          one_24 REAL,
-          two_24 REAL,
-          Curr_3 INTEGER,
-          Target INTEGER
-        );
-        
-        CREATE INDEX idx_one_24 ON ${tableName} (one_24);
-        CREATE INDEX idx_two_24 ON ${tableName} (two_24);
-        CREATE INDEX idx_Curr_3 ON ${tableName} (Curr_3);
-        CREATE INDEX idx_Target ON ${tableName} (Target);
-      `;
+        for (const row of data) {
+          await tx.executeSql(dmlQuery, [row.one_24, row.two_24, row.Curr_3, row.Target]);
+        }
+      });
 
-      const dmlQuery = `INSERT INTO ${tableName} (one_24, two_24, Curr_3, Target) VALUES (?, ?, ?, ?)`
-
-      this.database.transaction(tx => {
-
-        tx.executeSql(`DROP TABLE IF EXISTS ${tableName}`);
-        tx.executeSql(ddlQuery);
-
-        data.forEach((row: any) => {
-          tx.executeSql(dmlQuery, [row.one_24, row.two_24, row.Curr_3, row.Target], (tx: any, resultSet: any) => {
-            console.log('resultSet.rowsAffected: ' + resultSet.rowsAffected);
-          }, (error: any) => {
-            console.log('INSERT error: ' + error.message);
-          });
-        })
-      }).then(() => {
-        console.log('Data inserted');
-      }).catch(e => {
-        console.log(e);
-        throw e
-      })
-
+      console.log('Data insertion successful.');
       return true;
-
     } catch (error) {
-      console.error('Error while inserting', JSON.stringify(error));
+      console.error('SQLError', error);
       return false;
     }
   }
 
-  private readCsvData(path: string) {
-    this.http.get(path, { responseType: 'text' })
-      .subscribe(
-        (data: string) => {
-          this.extractData(data);
-        },
-        (err: any) => this.handleError(err)
-      );
-  }
-
-  private handleError(err: any) {
-    console.log('something went wrong: ', JSON.stringify(err));
-  }
-
-  private extractData(res: any) {
-    let csvData = res['_body'] || '';
-    let parsedData = papa.parse(csvData, { header: false }).data;
-    this.csvData = parsedData;
+  private async readCsvData(path: string): Promise<any[]> {
+    try {
+      const res = await this.http.get(path).toPromise();
+      return res as any[];
+    } catch (error) {
+      console.error('Error reading CSV data', error);
+      return [];
+    }
   }
 
   async searchThroughGroup(
@@ -108,20 +84,17 @@ export class DatabaseService {
     curr3Value: number,
     group: 'group_a' | 'group_b'
   ): Promise<any[]> {
+    const query = `SELECT * FROM ${group} WHERE one_24 = ? AND two_24 = ? AND Curr_3 = ?;`;
+    
     try {
-
-      const query = `SELECT * FROM ${group} WHERE one_24 = ? AND two_24 = ? AND Curr_3 = ?`;
-      const result = await this.database.executeSql(query, [one24Value, two_24Value, curr3Value]);
-
-      console.log('result', result);
-
+      const result = await this.database.executeSql(query, [one24Value.toString(), two_24Value.toString(), curr3Value.toString()]);
+      
       const data = [];
       for (let i = 0; i < result.rows.length; i++) {
         data.push(result.rows.item(i));
       }
 
       return data;
-
     } catch (error) {
       console.error('Error while searching', error);
       return [];
