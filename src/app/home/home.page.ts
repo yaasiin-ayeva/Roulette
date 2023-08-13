@@ -13,6 +13,7 @@ export class HomePage implements OnInit {
   values: string[];
   start: number = 0;
   end: number = 23;
+  resultData: any;
 
   constructor(
     private toastController: ToastController,
@@ -42,8 +43,20 @@ export class HomePage implements OnInit {
       const tab = Object.keys(TableName);
       let dataSeedingCount = 0;
 
+      // tab.forEach(async (group) => {
+      //   await this.databaseService.seedFromFile(
+      //     `assets/json/${group}.json`,
+      //     group
+      //   ).then(() => {
+      //     dataSeedingCount++;
+      //     if (dataSeedingCount === tab.length) {
+      //       loadingController.dismiss();
+      //     }
+      //   })
+      // });
+
       tab.forEach(async (group) => {
-        await this.databaseService.seedFromFile(
+        await this.databaseService.seedData(
           `assets/json/${group}.json`,
           group
         ).then(() => {
@@ -177,14 +190,37 @@ export class HomePage implements OnInit {
 
     const result = this.computationService.computeValues(inputArray);
 
-    const data = await this.databaseService.fetchFromDb(
+    const aData: any = await this.databaseService.fetch(
       Number(result.group_a.one_24),
       Number(result.group_a.two_24),
       Number(result.group_a.curr_3),
       'group_a'
     );
 
+    const bData: any = await this.databaseService.fetch(
+      Number(result.group_b.one_24),
+      Number(result.group_b.two_24),
+      Number(result.group_b.curr_3),
+      'group_b'
+    );
+
     console.log('result', JSON.stringify(result));
-    console.log('data', JSON.stringify(data));
+    console.log('aData', JSON.stringify(aData));
+    console.log('bData', JSON.stringify(bData));
+
+    this.resultData = {
+      group_a: {
+        one_24: result.group_a.one_24,
+        two_24: result.group_a.two_24,
+        curr_3: result.group_a.curr_3,
+        "targets": aData
+      },
+      group_b: {
+        one_24: result.group_b.one_24,
+        two_24: result.group_b.two_24,
+        curr_3: result.group_b.curr_3,
+        "targets": bData
+      }
+    };
   }
 }

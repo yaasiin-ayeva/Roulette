@@ -20,4 +20,6 @@
       </ion-col>
     </ion-row>
   </ion-grid>
+
+  <app-result-display *ngIf="resultData" [results]="resultData"></app-result-display>
 </ion-content>

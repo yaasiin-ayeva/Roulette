@@ -13,72 +13,10 @@ export const TableName = {
 })
 export class DatabaseService {
 
-  private database: SQLiteObject = new SQLiteObject('roulette.db');
+  private groupaJsonData: any[] = [];
+  private groupbJsonData: any[] = [];
 
   constructor(private sqlite: SQLite, private http: HttpClient) {
-    this.initDatabase();
-  }
-
-  private async initDatabase() {
-    this.database = await this.sqlite.create({
-      name: 'roulette.db',
-      location: 'default'
-    });
-  }
-
-  async seedFromFile(filePath: string, tableName: string): Promise<boolean> {
-
-    // const { value } = await Preferences.get({ key: `${tableName}` });
-
-    // if (value === `${tableName}`) {
-    //   return true;
-    // }
-
-    const data = await this.readFileData(filePath);
-
-    if (!data || data.length === 0) {
-      console.log('No data found in the file.');
-      return false;
-    }
-
-    const ddlQuery = `
-      CREATE TABLE IF NOT EXISTS ${tableName} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        one_24 varchar(4),
-        two_24 varchar(4),
-        Curr_3 varchar(4),
-        Target varchar(4)
-      );
-      
-      CREATE INDEX idx_one_24 ON ${tableName} (one_24);
-      CREATE INDEX idx_two_24 ON ${tableName} (two_24);
-      CREATE INDEX idx_Curr_3 ON ${tableName} (Curr_3);
-      CREATE INDEX idx_Target ON ${tableName} (Target);
-    `;
-
-    const dmlQuery = `INSERT INTO ${tableName} (one_24, two_24, Curr_3, Target) VALUES (?, ?, ?, ?);`;
-
-    try {
-      await this.database.transaction(async tx => {
-        await tx.executeSql(`DROP TABLE IF EXISTS ${tableName}`);
-        await tx.executeSql(ddlQuery);
-
-        for (const row of data) {
-          await tx.executeSql(dmlQuery, [row.one_24, row.two_24, row.Curr_3, row.Target]);
-        }
-      });
-
-      // await Preferences.set({
-      //   key: `${tableName}`,
-      //   value: `${tableName}`,
-      // });
-
-      console.log('Data insertion successful.');
-      return true;
-    } catch (error) {
-      console.error('SQLError', error);
-      return false;
-    }
   }
 
   private async readFileData(path: string): Promise<any[]> {
@@ -91,28 +29,47 @@ export class DatabaseService {
     }
   }
 
-  async fetchFromDb(
+  async fetch(
     one24Value: number,
     two_24Value: number,
     curr3Value: number,
     group: 'group_a' | 'group_b'
   ): Promise<any> {
 
-    const query = `SELECT * FROM ${group} WHERE one_24 = ? AND two_24 = ? AND Curr_3 = ?;`;
+    let result: any[] = [];
 
-    try {
-      const result = await this.database.executeSql(query, [one24Value.toString(), two_24Value.toString(), curr3Value.toString()]);
-      const data = Array.from({ length: result.rows.length }, (_, i) => result.rows.item(i));
+    const tab = (group === 'group_a') ? this.groupaJsonData : this.groupbJsonData;
 
-      return {
-        "success": true,
-        "message": "Data fetched successfully",
-        "count": data.length,
-        "data": data
+    tab.forEach((item) => {
+      if (item.one_24 === one24Value && item.two_24 === two_24Value && item.Curr_3 === curr3Value) {
+        result.push(item);
       }
+    });
+
+    return result;
+  } catch(error: any) {
+    console.error('Error while searching', error);
+    return [];
+  }
+
+  async seedData(filePath: string, tableName: string) {
+    try {
+
+      const data = await this.readFileData(filePath);
+
+      if (!data || data.length === 0) {
+        console.log('No data found in the file.');
+        return false;
+      }
+
+      (tableName === TableName.group_a) ? this.groupaJsonData = data : this.groupbJsonData = data;
+
+      console.log(this.groupaJsonData);
+      console.log(this.groupbJsonData);
+
+      return true;
     } catch (error) {
-      console.error('Error while searching', error);
-      return [];
+      return false;
     }
   }
 }
