@@ -3,13 +3,6 @@ import { AlertController, LoadingController, ToastController } from '@ionic/angu
 import { ComputationService } from 'src/services/computation.service';
 import { DatabaseService, TableName } from 'src/services/database.service';
 
-enum Buttons {
-  Add = '+',
-  Subtract = '-',
-  Statistics = 'Statistics',
-  Wipe = 'Wipe',
-}
-
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -18,9 +11,8 @@ enum Buttons {
 export class HomePage implements OnInit {
 
   values: string[];
-  start = 0;
-  end = 23;
-  buttons = Object.values(Buttons);
+  start: number = 0;
+  end: number = 23;
 
   constructor(
     private toastController: ToastController,
@@ -33,31 +25,42 @@ export class HomePage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await this.seedDatabase();
-  }
+    console.log('onInit');
 
-  async seedDatabase() {
     const loadingController = await this.loadingController.create({
       message: 'Seeding database, wait a moment...',
       mode: 'ios',
       spinner: 'crescent',
       translucent: true,
-      showBackdrop: false,
+      showBackdrop: false
     });
 
+    await loadingController.present();
+
     try {
+
       const tab = Object.keys(TableName);
-      const promises = tab.map(async (group) => {
-        await this.databaseService.seedFromFile(`assets/json/${group}.json`, group);
+      let dataSeedingCount = 0;
+
+      tab.forEach(async (group) => {
+        await this.databaseService.seedFromFile(
+          `assets/json/${group}.json`,
+          group
+        ).then(() => {
+          dataSeedingCount++;
+          if (dataSeedingCount === tab.length) {
+            loadingController.dismiss();
+          }
+        })
       });
 
-      await Promise.all(promises);
     } catch (error) {
       console.log(error);
-    } finally {
       await loadingController.dismiss();
     }
   }
+
+  buttons: string[] = ['+', '-', 'Statistics', 'Wipe'];
 
   validateValue(colIndex: number) {
     const inputValue = Number(this.values[colIndex]);
@@ -71,26 +74,36 @@ export class HomePage implements OnInit {
       this.start--;
       this.end--;
 
-      for (let i = this.start; i <= this.end; i++) {
-        this.values[i] = this.values[i + 1];
+      for (let i = 0; i < this.values.length; i++) {
+        if (i >= this.start && i <= this.end) {
+          this.values[i] = this.values[i + 1];
+        }
       }
       this.values[this.end + 1] = '';
     }
   }
 
   handleButtonClick(button: string) {
-    if (button === Buttons.Wipe) {
+    if (button === 'Wipe') {
+      console.log('Wipe');
       this.wipeGrid();
-    } else if (button === Buttons.Add) {
+    } else if (button === '+') {
+      console.log('+');
+      console.log('values', this.values);
+
       this.addValue();
       this.moveValuesBackward();
-    } else if (button === Buttons.Statistics) {
+      console.log('values', this.values);
+
+    } else if (button === 'Statistics') {
+
       this.computeStatistics();
     }
   }
 
   onInputChange(event: any, index: number) {
-    let inputValue = event.target.value;
+    let inputValue = event.target!.value;
+
     const lastCharacter = inputValue[inputValue.length - 1];
 
     if (isNaN(lastCharacter)) {
@@ -116,31 +129,26 @@ export class HomePage implements OnInit {
     this.values.push('');
   }
 
-  private wipeGrid() {
-    this.alertController
-      .create({
-        header: 'Wipe Grid',
-        message: 'Are you sure you want to wipe the grid?',
-        mode: 'ios',
-        buttons: [
-          {
-            text: 'No',
-            role: 'cancel',
-          },
-          {
-            text: 'Yes',
-            handler: () => {
-              this.clearGrid();
-            },
-          },
-        ],
-      })
-      .then((alert) => alert.present());
-  }
 
-  private async clearGrid() {
-    this.values = new Array(24).fill('');
-    await this.presentSuccessToast('bottom', 'Grid Cleared');
+  private wipeGrid() {
+    this.alertController.create({
+      header: 'Wipe Grid',
+      message: 'Are you sure you want to wipe the grid?',
+      mode: 'ios',
+      buttons: [
+        {
+          text: 'No',
+          role: 'cancel'
+        },
+        {
+          text: 'Yes',
+          handler: () => {
+            this.values = new Array(24).fill('');
+            this.presentSuccessToast('bottom', 'Grid Cleared');
+          }
+        }
+      ]
+    }).then(alert => alert.present());
   }
 
   async presentSuccessToast(position: 'top' | 'middle' | 'bottom', message: string) {

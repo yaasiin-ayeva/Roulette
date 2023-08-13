@@ -15,12 +15,16 @@ import { ComputationService } from 'src/services/computation.service';
 @NgModule({
   declarations: [AppComponent],
   imports: [
-    BrowserModule, 
+    BrowserModule,
     HttpClientModule,
-    IonicModule.forRoot(), 
+    IonicModule.forRoot(),
     AppRoutingModule
   ],
-  providers: [SQLite, DatabaseService, ComputationService, { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
+  providers: [
+    SQLite,
+    DatabaseService, ComputationService, { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
 })
-export class AppModule {}
+export class AppModule {
+  // Import the Storage module
+}

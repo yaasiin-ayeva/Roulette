@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 import { HttpClient } from '@angular/common/http';
+import { Preferences } from '@capacitor/preferences';
 
 export const TableName = {
   group_a: 'group_a',
   group_b: 'group_b'
-};
+}
 
 @Injectable({
   providedIn: 'root'
@@ -19,60 +20,58 @@ export class DatabaseService {
   }
 
   private async initDatabase() {
-    try {
-      this.database = await this.sqlite.create({
-        name: 'roulette.db',
-        location: 'default'
-      });
-      await this.createTables();
-    } catch (error) {
-      console.error('Error initializing database', error);
-    }
-  }
-
-  private async createTables() {
-    for (const tableName of Object.values(TableName)) {
-      const ddlQuery = `
-
-        DROP TABLE IF EXISTS ${tableName};
-        CREATE TABLE IF NOT EXISTS ${tableName} (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          one_24 varchar(4),
-          two_24 varchar(4),
-          Curr_3 varchar(4),
-          Target varchar(4)
-        );
-        
-        CREATE INDEX IF NOT EXISTS idx_one_24 ON ${tableName} (one_24);
-        CREATE INDEX IF NOT EXISTS idx_two_24 ON ${tableName} (two_24);
-        CREATE INDEX IF NOT EXISTS idx_Curr_3 ON ${tableName} (Curr_3);
-        CREATE INDEX IF NOT EXISTS idx_Target ON ${tableName} (Target);
-      `;
-
-      try {
-        await this.database.executeSql(ddlQuery);
-      } catch (error) {
-        console.error(`Error creating table ${tableName}`, error);
-      }
-    }
+    this.database = await this.sqlite.create({
+      name: 'roulette.db',
+      location: 'default'
+    });
   }
 
   async seedFromFile(filePath: string, tableName: string): Promise<boolean> {
-    const data = await this.readData(filePath);
+
+    // const { value } = await Preferences.get({ key: `${tableName}` });
+
+    // if (value === `${tableName}`) {
+    //   return true;
+    // }
+
+    const data = await this.readFileData(filePath);
 
     if (!data || data.length === 0) {
       console.log('No data found in the file.');
       return false;
     }
 
+    const ddlQuery = `
+      CREATE TABLE IF NOT EXISTS ${tableName} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        one_24 varchar(4),
+        two_24 varchar(4),
+        Curr_3 varchar(4),
+        Target varchar(4)
+      );
+      
+      CREATE INDEX idx_one_24 ON ${tableName} (one_24);
+      CREATE INDEX idx_two_24 ON ${tableName} (two_24);
+      CREATE INDEX idx_Curr_3 ON ${tableName} (Curr_3);
+      CREATE INDEX idx_Target ON ${tableName} (Target);
+    `;
+
     const dmlQuery = `INSERT INTO ${tableName} (one_24, two_24, Curr_3, Target) VALUES (?, ?, ?, ?);`;
 
     try {
       await this.database.transaction(async tx => {
+        await tx.executeSql(`DROP TABLE IF EXISTS ${tableName}`);
+        await tx.executeSql(ddlQuery);
+
         for (const row of data) {
           await tx.executeSql(dmlQuery, [row.one_24, row.two_24, row.Curr_3, row.Target]);
         }
       });
+
+      // await Preferences.set({
+      //   key: `${tableName}`,
+      //   value: `${tableName}`,
+      // });
 
       console.log('Data insertion successful.');
       return true;
@@ -82,11 +81,12 @@ export class DatabaseService {
     }
   }
 
-  private async readData(path: string): Promise<any[]> {
+  private async readFileData(path: string): Promise<any[]> {
     try {
-      return await this.http.get(path).toPromise() as any[];
+      const res = await this.http.get(path).toPromise();
+      return res as any[];
     } catch (error) {
-      console.error('Error reading data', error);
+      console.error('Error reading file data', error);
       return [];
     }
   }
