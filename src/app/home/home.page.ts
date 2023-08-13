@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { AlertController, ToastController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { ComputationService } from 'src/services/computation.service';
 import { DatabaseService, TableName } from 'src/services/database.service';
 
@@ -13,10 +13,12 @@ export class HomePage implements OnInit {
   values: string[];
   start: number = 0;
   end: number = 23;
+  resultData: any;
 
   constructor(
     private toastController: ToastController,
     private alertController: AlertController,
+    private loadingController: LoadingController,
     private databaseService: DatabaseService,
     private computationService: ComputationService
   ) {
@@ -24,28 +26,50 @@ export class HomePage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    console.log('onInit');
+
+    const loadingController = await this.loadingController.create({
+      message: 'Seeding database, wait a moment...',
+      mode: 'ios',
+      spinner: 'crescent',
+      translucent: true,
+      showBackdrop: false
+    });
+
+    await loadingController.present();
 
     try {
-      this.presentSuccessToast('bottom', 'Home Page');
-
-      await this.databaseService.initDatabase();
 
       const tab = Object.keys(TableName);
+      let dataSeedingCount = 0;
+
+      // tab.forEach(async (group) => {
+      //   await this.databaseService.seedFromFile(
+      //     `assets/json/${group}.json`,
+      //     group
+      //   ).then(() => {
+      //     dataSeedingCount++;
+      //     if (dataSeedingCount === tab.length) {
+      //       loadingController.dismiss();
+      //     }
+      //   })
+      // });
+
       tab.forEach(async (group) => {
-
-        console.log('reading file', group);
-
-        await this.databaseService.seedFromCsv(
-          `assets/docs/${group}.csv`,
+        await this.databaseService.seedData(
+          `assets/json/${group}.json`,
           group
-        );
+        ).then(() => {
+          dataSeedingCount++;
+          if (dataSeedingCount === tab.length) {
+            loadingController.dismiss();
+          }
+        })
+      });
 
-        console.log('file', group, 'imported');
-      })
-
-      console.log('done');
     } catch (error) {
       console.log(error);
+      await loadingController.dismiss();
     }
   }
 
@@ -86,17 +110,7 @@ export class HomePage implements OnInit {
 
     } else if (button === 'Statistics') {
 
-      const inputArray: number[] = [
-        35, 25, 19, 22,
-        9, 1, 12, 35,
-        7, 3,
-        36, 33, 35, 11,
-        20, 34, 22, 29,
-        22, 13,
-        25, 9, 2, 21
-      ];
-
-      const result = this.computationService.computeValues(this.values);
+      this.computeStatistics();
     }
   }
 
@@ -119,29 +133,6 @@ export class HomePage implements OnInit {
     event.target.value = inputValue;
     this.values[index] = inputValue;
   }
-
-  // private addValue() {
-  //   console.log('values', this.values);
-
-  //   if (this.values[this.values.length - 1] === '') {
-  //     return;
-  //   }
-
-  //   let newArray = new Array(this.values.length).fill('');
-
-  //   this.values.forEach((value, index) => {
-  //     newArray[index] = value;
-  //   });
-
-  //   this.values = newArray;
-  //   this.values.push('');
-
-  //   this.start = this.start + 1;
-  //   this.end = this.end + 1;
-
-  //   console.log('values', this.values);
-
-  // }
 
   private addValue() {
     if (this.values[this.values.length - 1] === '') {
@@ -184,5 +175,52 @@ export class HomePage implements OnInit {
     });
 
     await toast.present();
+  }
+
+  async computeStatistics() {
+    const inputArray: number[] = [
+      35, 25, 19, 22,
+      9, 1, 12, 35,
+      7, 3,
+      36, 33, 35, 11,
+      20, 34, 22, 29,
+      22, 13,
+      25, 9, 2, 21,
+    ];
+
+    const result = this.computationService.computeValues(inputArray);
+
+    const aData: any = await this.databaseService.fetch(
+      Number(result.group_a.one_24),
+      Number(result.group_a.two_24),
+      Number(result.group_a.curr_3),
+      'group_a'
+    );
+
+    const bData: any = await this.databaseService.fetch(
+      Number(result.group_b.one_24),
+      Number(result.group_b.two_24),
+      Number(result.group_b.curr_3),
+      'group_b'
+    );
+
+    console.log('result', JSON.stringify(result));
+    console.log('aData', JSON.stringify(aData));
+    console.log('bData', JSON.stringify(bData));
+
+    this.resultData = {
+      group_a: {
+        one_24: result.group_a.one_24,
+        two_24: result.group_a.two_24,
+        curr_3: result.group_a.curr_3,
+        "targets": aData
+      },
+      group_b: {
+        one_24: result.group_b.one_24,
+        two_24: result.group_b.two_24,
+        curr_3: result.group_b.curr_3,
+        "targets": bData
+      }
+    };
   }
 }
