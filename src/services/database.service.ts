@@ -1,7 +1,5 @@
 import { Injectable } from '@angular/core';
-import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 import { HttpClient } from '@angular/common/http';
-import { Preferences } from '@capacitor/preferences';
 
 export const TableName = {
   group_a: 'group_a',
@@ -16,7 +14,7 @@ export class DatabaseService {
   private groupaJsonData: any[] = [];
   private groupbJsonData: any[] = [];
 
-  constructor(private sqlite: SQLite, private http: HttpClient) {
+  constructor(private http: HttpClient) {
   }
 
   private async readFileData(path: string): Promise<any[]> {
