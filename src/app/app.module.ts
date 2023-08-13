@@ -8,7 +8,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
 import { HttpClientModule } from '@angular/common/http';
-import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 import { DatabaseService } from 'src/services/database.service';
 import { ComputationService } from 'src/services/computation.service';
 
@@ -21,10 +20,8 @@ import { ComputationService } from 'src/services/computation.service';
     AppRoutingModule
   ],
   providers: [
-    SQLite,
     DatabaseService, ComputationService, { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
 })
 export class AppModule {
-  // Import the Storage module
 }
