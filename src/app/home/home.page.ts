@@ -198,8 +198,5 @@ export class HomePage implements OnInit {
         "targets": bString
       }
     };
-
-    console.log('this.buttons', this.buttons);
-
   }
 }

@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.ayevayaasiin.roulette;
 
 import com.getcapacitor.BridgeActivity;
 

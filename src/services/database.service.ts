@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 export const TableName = {
   group_a: 'group_a',
@@ -11,7 +12,7 @@ export const TableName = {
 })
 export class DatabaseService {
 
-  private apiUrl = 'http://197.253.123.12:9009/api/v1/roulette';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {
   }
@@ -30,8 +31,19 @@ export class DatabaseService {
     }
 
     const url = `${this.apiUrl}/${group}`;
-    const result = await this.http.post(url, data).toPromise();
-    
-    return result;
+
+    let resultData: any;
+
+    try {
+      resultData = await this.http.post(url, data).toPromise();
+
+      console.log(resultData);
+
+    } catch (error) {
+      console.log(error);
+
+    }
+
+    return resultData;
   }
 }
