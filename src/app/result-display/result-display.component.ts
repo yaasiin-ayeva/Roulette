@@ -6,5 +6,5 @@ import { Component, Input } from '@angular/core';
   styleUrls: ['./result-display.component.scss'],
 })
 export class ResultDisplayComponent {
-  @Input() results: any; // Assuming you'll pass the results object here
+  @Input() results: any;
 }
