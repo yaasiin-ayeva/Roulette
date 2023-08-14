@@ -190,23 +190,27 @@ export class HomePage implements OnInit {
 
     const result = this.computationService.computeValues(inputArray);
 
-    const aData: any = await this.databaseService.fetch(
+    const aData: any = [];
+
+    const bData: any = [];
+
+    const apiData1: any = await this.databaseService.apiFetch(
       Number(result.group_a.one_24),
       Number(result.group_a.two_24),
       Number(result.group_a.curr_3),
       'group_a'
-    );
+    )
 
-    const bData: any = await this.databaseService.fetch(
+    const apiData2: any = await this.databaseService.apiFetch(
       Number(result.group_b.one_24),
       Number(result.group_b.two_24),
       Number(result.group_b.curr_3),
       'group_b'
-    );
+    )
 
     console.log('result', JSON.stringify(result));
-    console.log('aData', JSON.stringify(aData));
-    console.log('bData', JSON.stringify(bData));
+    console.log('apiData1', JSON.stringify(apiData1));
+    console.log('apiData2', JSON.stringify(apiData2));
 
     this.resultData = {
       group_a: {
