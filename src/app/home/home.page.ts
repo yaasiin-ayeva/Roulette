@@ -14,6 +14,7 @@ export class HomePage implements OnInit {
   start: number = 0;
   end: number = 23;
   resultData: any;
+  public buttons: string[] = ['+', '-', 'Statistics', 'Wipe'];
 
   constructor(
     private toastController: ToastController,
@@ -26,54 +27,18 @@ export class HomePage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    console.log('onInit');
 
     const loadingController = await this.loadingController.create({
-      message: 'Seeding database, wait a moment...',
+      message: 'Initialization, wait a moment...',
       mode: 'ios',
       spinner: 'crescent',
       translucent: true,
+      duration: 300,
       showBackdrop: false
     });
 
     await loadingController.present();
-
-    try {
-
-      const tab = Object.keys(TableName);
-      let dataSeedingCount = 0;
-
-      // tab.forEach(async (group) => {
-      //   await this.databaseService.seedFromFile(
-      //     `assets/json/${group}.json`,
-      //     group
-      //   ).then(() => {
-      //     dataSeedingCount++;
-      //     if (dataSeedingCount === tab.length) {
-      //       loadingController.dismiss();
-      //     }
-      //   })
-      // });
-
-      tab.forEach(async (group) => {
-        await this.databaseService.seedData(
-          `assets/json/${group}.json`,
-          group
-        ).then(() => {
-          dataSeedingCount++;
-          if (dataSeedingCount === tab.length) {
-            loadingController.dismiss();
-          }
-        })
-      });
-
-    } catch (error) {
-      console.log(error);
-      await loadingController.dismiss();
-    }
   }
-
-  buttons: string[] = ['+', '-', 'Statistics', 'Wipe'];
 
   validateValue(colIndex: number) {
     const inputValue = Number(this.values[colIndex]);
@@ -98,18 +63,14 @@ export class HomePage implements OnInit {
 
   handleButtonClick(button: string) {
     if (button === 'Wipe') {
-      console.log('Wipe');
       this.wipeGrid();
     } else if (button === '+') {
-      console.log('+');
       console.log('values', this.values);
-
       this.addValue();
       this.moveValuesBackward();
       console.log('values', this.values);
 
     } else if (button === 'Statistics') {
-
       this.computeStatistics();
     }
   }
@@ -157,6 +118,7 @@ export class HomePage implements OnInit {
           text: 'Yes',
           handler: () => {
             this.values = new Array(24).fill('');
+            this.resultData = null;
             this.presentSuccessToast('bottom', 'Grid Cleared');
           }
         }
@@ -189,42 +151,55 @@ export class HomePage implements OnInit {
     ];
 
     const result = this.computationService.computeValues(inputArray);
-
-    const aData: any = [];
-
-    const bData: any = [];
-
-    const apiData1: any = await this.databaseService.apiFetch(
+    const aData: any = await this.databaseService.apiFetch(
       Number(result.group_a.one_24),
       Number(result.group_a.two_24),
       Number(result.group_a.curr_3),
       'group_a'
-    )
+    );
 
-    const apiData2: any = await this.databaseService.apiFetch(
+    const bData: any = await this.databaseService.apiFetch(
       Number(result.group_b.one_24),
       Number(result.group_b.two_24),
       Number(result.group_b.curr_3),
       'group_b'
-    )
+    );
 
-    console.log('result', JSON.stringify(result));
-    console.log('apiData1', JSON.stringify(apiData1));
-    console.log('apiData2', JSON.stringify(apiData2));
+    let aString = '';
+    let bString = '';
+
+    for (let i = 0; i < aData.data.length; i++) {
+      if (i === 0) {
+        aString += aData.data[i];
+      } else {
+        aString += ', ' + aData.data[i];
+      }
+    }
+
+    for (let i = 0; i < bData.data.length; i++) {
+      if (i === 0) {
+        bString += bData.data[i];
+      } else {
+        bString += ', ' + bData.data[i];
+      }
+    }
 
     this.resultData = {
       group_a: {
         one_24: result.group_a.one_24,
         two_24: result.group_a.two_24,
         curr_3: result.group_a.curr_3,
-        "targets": aData
+        "targets": aString
       },
       group_b: {
         one_24: result.group_b.one_24,
         two_24: result.group_b.two_24,
         curr_3: result.group_b.curr_3,
-        "targets": bData
+        "targets": bString
       }
     };
+
+    console.log('this.buttons', this.buttons);
+
   }
 }

@@ -47,10 +47,8 @@ export class ComputationService {
 
     private computeGroupA(inputArray: number[]) {
         const groupA: number[] = Array.from({ length: 12 }, (_, i) => i + 1);
-        console.log('Dans Array A, groupA ', groupA);
 
         const groupB: number[] = Array.from({ length: 12 }, (_, i) => i + 13);
-        console.log('Dans Array A, groupB ', groupB);
 
         let sum_one = 0;
         let sum_two = 0;
